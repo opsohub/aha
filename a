@@ -14,7 +14,7 @@ if selectedLoadingScreen == "2" then
 end
 
 if selectedLoadingScreen == "3" then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/RambloHub/Loadingscreen-3/refs/heads/main/screen3"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/OluScripts/Hugehunter/refs/heads/main/ngga"))()
 end
 if selectedLoadingScreen == "4" then
     loadstring(game:HttpGet("https://raw.githubusercontent.com/RambloHub/Loadingscreen-4-/refs/heads/main/screen4"))()
