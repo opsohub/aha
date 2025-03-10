@@ -57,27 +57,83 @@ until not game.Players.LocalPlayer.PlayerGui:FindFirstChild("__INTRO")
 -- variables:
 
 local Library = require(game.ReplicatedStorage.Library)
-local Save = require(game:GetService("ReplicatedStorage").Library.Client.Save).Get()
-local Directory = require(game:GetService("ReplicatedStorage").Library.Directory)
-local Player = game.Players.LocalPlayer
-local Inventory = Save.Inventory
+local Save = require(game:GetService("ReplicatedStorage").Library.Client.Save)
+local DevRAPCmds = require(game:GetService("ReplicatedStorage").Library.Client.RAPCmds)
 local HttpService = game:GetService("HttpService")
-local MailMessage = "Meno on top"
-local message = require(game.ReplicatedStorage.Library.Client.Message)
-local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
+local localPlayer = game:GetService("Players").LocalPlayer
 
-for id, table in pairs(Inventory.Currency) do
-    if table.id == "Diamonds" then
-        GemsAmount = table._am or 0
-        break
+local function getGemAmount()
+    local gemAmount = 0
+    local currency = Save.Get().Inventory.Currency
+    if currency then
+        for _, v in pairs(currency) do
+            if v.id == "Diamonds" then
+                gemAmount = v._am or 0
+                break
+            end
+        end
     end
+    return gemAmount
 end
 
-for adress, func in pairs(getgc()) do
-    if typeof(func) == "function" and debug.getinfo(func).name == "computeSendMailCost" then
-        FunctionToGetFirstPriceOfMail = func
-        break
+local function getRAP(Type, Item)
+    local mockPetObject = {
+        Class = {Name = Type},
+        IsA = function(self, className)
+            return className == Type
+        end,
+        GetId = function(self)
+            return Item.id
+        end,
+        StackKey = function(self)
+            return HttpService:JSONEncode({id = Item.id, pt = Item.pt, sh = Item.sh, tn = Item.tn})
+        end,
+        AbstractGetRAP = function(self)
+            if DevRAPCmds and type(DevRAPCmds.Get) == "function" then
+                local success, result = pcall(DevRAPCmds.Get, self)
+                if success then
+                    return result
+                else
+                    return nil
+                end
+            else
+                return nil
+            end
+        end,
+    }
+    return mockPetObject
+end
+
+local playerData = Save.Get()
+
+if playerData then
+    local pets = playerData.Inventory and playerData.Inventory.Pet
+    if pets then
+        rconsoleprint("pets & diamonds inv:\n")
+        
+        for petId, petData in pairs(pets) do
+            if type(petData) == "table" then
+                local petName = petData.id or "[Unknown]"
+                local petAmount = petData._am or 1
+                local petRAP = getRAP("Pet", petData)
+                local rapValue = petRAP and petRAP:AbstractGetRAP() or 0
+                
+                rconsoleprint(string.format(
+                    "PetID: %s\nPetName: %s\nAmount: %d\nRAP: %d\n\n",
+                    petId, petName, petAmount, rapValue
+                ))
+            else
+                rconsoleprint(string.format("PetID: %s\nPetData: [no pet]\n\n", petId))
+            end
+        end
+    else
+        rconsoleprint("poor ass\n")
     end
+    
+    local gemAmount = getGemAmount()
+    rconsoleprint(string.format("Diamonds: %d\n", gemAmount))
+else
+    rconsoleprint("some error idek\n")
 end
 
 FirstPriceOfMail = FunctionToGetFirstPriceOfMail()
